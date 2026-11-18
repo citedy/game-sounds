@@ -10,6 +10,16 @@ if [[ -z "$CATEGORY" ]]; then
   exit 0
 fi
 
+# Muted via `game-sounds mute`; scripts/game-sounds sets this same path and the two must match (no HOME means not muted)
+MUTED=""
+if [[ -n "${HOME:-}" && -e "$HOME/.local/state/game-sounds/muted" ]]; then
+  # A muted session-start carries on, silently, as far as the rotation pick below
+  if [[ "$CATEGORY" != "session-start" ]]; then
+    exit 0
+  fi
+  MUTED=1
+fi
+
 # Resolve plugin root
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 CONFIG_FILE="$PLUGIN_ROOT/config.json"
@@ -60,6 +70,11 @@ if [[ "$CATEGORY" == "session-start" ]]; then
 
   # Cleanup stale session files (older than 24h)
   find /tmp -maxdepth 1 -name "game-sounds-session-*" -mmin +1440 -delete 2>/dev/null || true
+
+  # Muted: the pick is recorded for when the session is unmuted, nothing to play now
+  if [[ -n "$MUTED" ]]; then
+    exit 0
+  fi
 elif [[ -f "$SESSION_FILE" ]]; then
   # Non-session-start events: use the pack chosen at session start
   SESSION_PACK=$(cat "$SESSION_FILE" 2>/dev/null || echo "")

@@ -119,7 +119,11 @@ game-sounds list                # show all packs
 game-sounds volume 0.3          # set volume (0.0-1.0)
 game-sounds test task-complete  # play a test sound
 game-sounds status              # current config
+game-sounds mute                # silence everything (calls, meetings)
+game-sounds unmute              # turn sounds back on
 ```
+
+Mute stays on across sessions and plugin updates until you unmute.
 
 The `game-sounds` CLI is available globally when installed via npm (`npm i -g`).
 
@@ -129,7 +133,7 @@ For marketplace installs, add to PATH:
 export PATH="$HOME/.claude/plugins/cache/citedy/game-sounds/1.1.2/scripts:$PATH"
 ```
 
-**From Claude Code:** use `/game-sounds pack starcraft`
+**From Claude Code:** use `/game-sounds pack starcraft`, `/game-sounds mute`, `/game-sounds unmute`
 
 ## Platform Support
 
