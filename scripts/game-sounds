@@ -48,6 +48,9 @@ HELPER="$(cd "$(dirname "$0")" && pwd)/config-helper.py"
 
 cfg() { python3 "$HELPER" "$CONFIG" "$@" 2>/dev/null; }
 
+# Mute flag, kept outside the plugin dir so updates don't reset it; play-sound.sh checks this same path and the two must match (empty when HOME is not set: not muted)
+MUTE_FILE="${HOME:+$HOME/.local/state/game-sounds/muted}"
+
 # Arrow key interactive menu
 interactive_select() {
   local current="$1"
@@ -249,7 +252,31 @@ case "${1:-}" in
     fi
     ;;
 
+  mute|m)
+    if [[ -z "$MUTE_FILE" ]]; then
+      echo -e "${YELLOW}HOME is not set.${RESET} Can't mute without it."
+      exit 1
+    fi
+    mkdir -p "$(dirname "$MUTE_FILE")"
+    touch "$MUTE_FILE"
+    echo -e "${GREEN}✔${RESET} 🔇 Sounds ${BOLD}muted${RESET}"
+    echo -e "  ${DIM}Run${RESET} ${CYAN}game-sounds unmute${RESET} ${DIM}to turn them back on${RESET}"
+    ;;
+
+  unmute|u)
+    if [[ -z "$MUTE_FILE" ]]; then
+      echo -e "${YELLOW}HOME is not set.${RESET} Can't unmute without it."
+      exit 1
+    fi
+    rm -f "$MUTE_FILE"
+    echo -e "${GREEN}✔${RESET} 🔊 Sounds ${BOLD}unmuted${RESET}"
+    ;;
+
   test|t)
+    if [[ -e "$MUTE_FILE" ]]; then
+      echo -e "${YELLOW}Sounds are muted.${RESET} Run ${CYAN}game-sounds unmute${RESET} first."
+      exit 1
+    fi
     category="${2:-session-start}"
     plugin_root="$(dirname "$CONFIG")"
     pack=$(cfg get active_pack warcraft)
@@ -271,6 +298,9 @@ case "${1:-}" in
     if [[ -n "$rotation" ]]; then
       echo -e "  Rotation: 🎲 ${BOLD}$rotation${RESET}"
     fi
+    if [[ -e "$MUTE_FILE" ]]; then
+      echo -e "  Sounds:   🔇 ${BOLD}muted${RESET}"
+    fi
     echo ""
     ;;
 
@@ -285,6 +315,8 @@ case "${1:-}" in
     echo -e "  ${CYAN}rotation${RESET} remove <pack> Remove a pack from rotation"
     echo -e "  ${CYAN}rotation${RESET} [list]        Show current rotation"
     echo -e "  ${CYAN}rotation${RESET} clear         Clear rotation (use active_pack)"
+    echo -e "  ${CYAN}mute${RESET}                   Silence all sounds"
+    echo -e "  ${CYAN}unmute${RESET}                 Turn sounds back on"
     echo -e "  ${CYAN}test${RESET} [category]        Play a test sound"
     echo -e "  ${CYAN}status${RESET}                 Show current config"
     echo ""
@@ -303,8 +335,10 @@ case "${1:-}" in
     vol=$(cfg get volume 0.5)
     count=$(find "$SOUNDS_DIR/$pack" -name "*.mp3" 2>/dev/null | wc -l | tr -d ' ')
     icon=$(pack_icon "$pack")
+    muted=""
+    [[ -e "$MUTE_FILE" ]] && muted=" 🔇 muted"
     echo ""
-    echo -e "${BOLD}🎮 Game Sounds${RESET} — $icon ${BOLD}$pack${RESET} ($count sounds) 🔊 $vol"
+    echo -e "${BOLD}🎮 Game Sounds${RESET} — $icon ${BOLD}$pack${RESET} ($count sounds) 🔊 $vol$muted"
     echo -e "  ${DIM}Run${RESET} ${CYAN}game-sounds switch${RESET} ${DIM}to change pack${RESET}"
     echo ""
     ;;
